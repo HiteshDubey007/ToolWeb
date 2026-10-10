@@ -1,4 +1,4 @@
-name: Deploy static site to GitHub Pages
+name: ToolWeb preview and production deployment
 
 on:
   push:
@@ -7,25 +7,42 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
-  deploy:
+  stage-preview:
+    if: github.ref == 'refs/heads/stage'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout stage branch
+        uses: actions/checkout@v4
+      - name: Upload stage website preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolweb-stage-preview
+          path: |
+            index.html
+            styles.css
+          retention-days: 7
+
+  deploy-production:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages-production
+      cancel-in-progress: true
     steps:
-      - name: Checkout
+      - name: Checkout main branch
         uses: actions/checkout@v4
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload site artifact
+      - name: Upload production site
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
